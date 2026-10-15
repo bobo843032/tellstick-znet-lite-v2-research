@@ -1,6 +1,8 @@
-Z-Wave Subsystem — Hardware, USB Interface and Firmware Architecture
+# Z-Wave Subsystem — Hardware, USB Interface and Firmware Architecture
 
-Overview
+[Documentation index](../README.md#documentation)
+
+## Overview
 
 The Telldus TellStick ZNet Lite V2 contains a dedicated Z-Wave subsystem that operates independently of the gateway’s 433 MHz radio controller.
 
@@ -14,125 +16,114 @@ The findings are based on examination of a personally owned TellStick ZNet Lite 
 
 The central architectural finding is that Z-Wave functionality is provided by a separate controller, not by the Atheros processor’s integrated wireless interface.
 
-⸻
-
-1. Identified Hardware
+## Identified Hardware
 
 The investigation identified a dedicated Sigma Designs Z-Wave controller connected to the Linux host.
 
-Component	Identification	Function
-Host processor	Atheros AR933x	Runs Linux and Telldus applications
-Z-Wave controller	Sigma Designs	Z-Wave communication
-USB vendor ID	0658	Sigma Designs
-USB product ID	0200	Z-Wave controller interface
-Linux driver	cdc_acm	USB serial communication
-Linux device	/dev/ttyACM1	Z-Wave serial interface
-Firmware platform	OpenWrt / Linux 4.1.23	Host operating system
+| Component | Identification | Function |
+| --- | --- | --- |
+| Host processor | Atheros AR933x | Runs Linux and Telldus applications |
+| Z-Wave controller | Sigma Designs | Z-Wave communication |
+| USB vendor ID | 0658 | Sigma Designs |
+| USB product ID | 0200 | Z-Wave controller interface |
+| Linux driver | cdc_acm | USB serial communication |
+| Linux device | /dev/ttyACM1 | Z-Wave serial interface |
+| Firmware platform | OpenWrt / Linux 4.1.23 | Host operating system |
 
 The exact Z-Wave controller chip model, hardware revision, firmware version and supported Z-Wave feature set have not been independently established.
 
 The USB identification is not sufficient to determine all of those properties.
 
-2. System Architecture
+## System Architecture
 
 The Z-Wave controller is part of the gateway’s internal USB architecture.
 
-TellStick ZNet Lite V2
-|
-+-- Atheros AR933x
-|   |
-|   +-- Linux 4.1.23
-|   |
-|   +-- Telldus application
-|   |   |
-|   |   +-- Z-Wave software adapter
-|   |   |
-|   |   +-- Device management
-|   |   |
-|   |   +-- Application events
-|   |
-|   +-- USB host controller
-|       |
-|       +-- Internal USB hub
-|           |
-|           +-- Sigma Designs Z-Wave controller
-|               |
-|               +-- USB CDC ACM
-|               |
-|               +-- /dev/ttyACM1
-|               |
-|               +-- Z-Wave radio
-|
-+-- Separate RF433 subsystem
-    |
-    +-- PIC18F25K50
-    +-- MAX7030
-    +-- /dev/ttyACM0
+- TellStick ZNet Lite V2
+  - Atheros AR933x
+    - Linux 4.1.23
+    - Telldus application
+- |
+  - Z-Wave software adapter
+- |
+  - Device management
+- |
+  - Application events
+  - USB host controller
+    - Internal USB hub
+      - Sigma Designs Z-Wave controller
+        - USB CDC ACM
+        - /dev/ttyACM1
+        - Z-Wave radio
+  - Separate RF433 subsystem
+    - PIC18F25K50
+    - MAX7030
+    - /dev/ttyACM0
 
-This is a logical architecture diagram based on the identified components and interfaces.
+This is a logical architecture outline based on the identified components and interfaces.
 
 It is not a complete electrical schematic.
 
-3. USB Identification
+## USB Identification
 
 The Z-Wave controller was identified with the following USB vendor and product identifiers:
 
+```text
 Vendor ID:  0658
 Product ID: 0200
+```
 
 These identifiers are associated with Sigma Designs Z-Wave controller hardware.
 
 The interface is exposed to Linux as:
 
+```text
 /dev/ttyACM1
+```
 
-Original Kernel Log
+### Original Kernel Log
 
 The captured boot sequence includes:
 
+```text
 [   11.839356] cdc_acm 1-1.1:1.0: ttyACM0: USB ACM device
 [   11.844816] cdc_acm 1-1.4:1.0: ttyACM1: USB ACM device
+```
 
 The two interfaces correspond to different internal controllers.
 
-Device	Subsystem
-/dev/ttyACM0	RF433
-/dev/ttyACM1	Z-Wave
+| Device | Subsystem |
+| --- | --- |
+| /dev/ttyACM0 | RF433 |
+| /dev/ttyACM1 | Z-Wave |
 
 The association was established on the examined device.
 
 Linux device numbering is determined during enumeration and should not be assumed to remain identical under every hardware or boot configuration.
 
-4. USB CDC ACM Communication
+## USB CDC ACM Communication
 
 The controller uses the Linux USB Communications Device Class Abstract Control Model driver.
 
 The kernel module is commonly identified as:
 
+```text
 cdc_acm
+```
 
 This driver exposes compatible USB devices through character-device interfaces such as:
 
+```text
 /dev/ttyACM1
+```
 
-Communication Layers
+### Communication Layers
 
-Telldus application
-        |
-        v
-Z-Wave software adapter
-        |
-        v
-Linux serial interface
-        |
-        v
-USB CDC ACM
-        |
-        v
-Sigma Designs controller
-        |
-        v
-Z-Wave radio network
+1. Telldus application
+2. Z-Wave software adapter
+3. Linux serial interface
+4. USB CDC ACM
+5. Sigma Designs controller
+6. Z-Wave radio network
 
 The USB connection carries communication between the host application and the dedicated controller.
 
@@ -142,60 +133,53 @@ Those responsibilities may be divided between the controller firmware and host s
 
 The precise division has not been completely characterized.
 
-5. Z-Wave and RF433 Are Separate Systems
+## Z-Wave and RF433 Are Separate Systems
 
 The TellStick ZNet Lite V2 supports two distinct radio subsystems.
 
 Although both appear as USB serial devices, their hardware and protocol architectures differ.
 
-Property	Z-Wave	RF433
-Controller manufacturer	Sigma Designs	Microchip
-Identified controller	Exact model not established	PIC18F25K50
-Radio hardware	Dedicated Z-Wave controller	Maxim MAX7030
-USB ID	0658:0200	1781:0c32
-Observed Linux device	/dev/ttyACM1	/dev/ttyACM0
-Host interface	USB CDC ACM	USB CDC ACM
-Protocol	Z-Wave	Supported 433 MHz protocols
-Network behavior	Z-Wave protocol stack	Protocol-dependent
+| Property | Z-Wave | RF433 |
+| --- | --- | --- |
+| Controller manufacturer | Sigma Designs | Microchip |
+| Identified controller | Exact model not established | PIC18F25K50 |
+| Radio hardware | Dedicated Z-Wave controller | Maxim MAX7030 |
+| USB ID | 0658:0200 | 1781:0c32 |
+| Observed Linux device | /dev/ttyACM1 | /dev/ttyACM0 |
+| Host interface | USB CDC ACM | USB CDC ACM |
+| Protocol | Z-Wave | Supported 433 MHz protocols |
+| Network behavior | Z-Wave protocol stack | Protocol-dependent |
 
 These differences are important when considering driver support, firmware modification or independent integrations.
 
 A technique applicable to the RF433 controller cannot automatically be applied to the Z-Wave controller.
 
-6. Software Integration
+## Software Integration
 
 The stock Telldus firmware includes Python-based application components responsible for interacting with the radio subsystems.
 
 The main application entry point is:
 
+```text
 /usr/bin/tellstick-znet.py
+```
 
 The application stack includes Z-Wave adapter functionality.
 
-Logical Application Flow
+### Logical Application Flow
 
-Application startup
-        |
-        v
-Z-Wave adapter initialization
-        |
-        v
-Serial communication
-        |
-        v
-/dev/ttyACM1
-        |
-        v
-Z-Wave controller
-        |
-        v
-Z-Wave network
+1. Application startup
+2. Z-Wave adapter initialization
+3. Serial communication
+4. /dev/ttyACM1
+5. Z-Wave controller
+6. Z-Wave network
 
 The application may use the controller for operations such as device communication and network management.
 
 However, the precise commands, supported management functions and error-handling behavior have not been fully documented in this investigation.
 
-Startup Considerations
+### Startup Considerations
 
 The production Telldus application uses explicit initialization of selected components.
 
@@ -203,39 +187,39 @@ The presence of a Python module or package entry point does not necessarily mean
 
 Any independent integration would need to account for the actual application startup path and serial-port ownership.
 
-7. Z-Wave Controller Responsibilities
+## Z-Wave Controller Responsibilities
 
 A dedicated Z-Wave controller typically performs protocol-specific operations that are separate from ordinary Linux networking.
 
 Potential responsibilities include:
 
-* Radio communication
-* Z-Wave protocol framing
-* Controller state management
-* Communication with included nodes
-* Network-related protocol operations
-* Reporting received events to the host
+- Radio communication
+- Z-Wave protocol framing
+- Controller state management
+- Communication with included nodes
+- Network-related protocol operations
+- Reporting received events to the host
 
 These are architectural possibilities consistent with a dedicated Z-Wave controller.
 
 They are not a verified inventory of functions exposed by the specific firmware installed in this device.
 
-Important Distinction
+### Important Distinction
 
 The USB interface establishes a communication channel between the Linux host and the Z-Wave controller.
 
 It does not, by itself, establish whether the host can:
 
-* Read or replace the controller firmware
-* Access all controller configuration
-* Export complete network state
-* Perform controller backup and restore
-* Use every Z-Wave command class
-* Operate the controller with arbitrary third-party software
+- Read or replace the controller firmware
+- Access all controller configuration
+- Export complete network state
+- Perform controller backup and restore
+- Use every Z-Wave command class
+- Operate the controller with arbitrary third-party software
 
 Each capability requires separate verification.
 
-8. Serial API Considerations
+## Serial API Considerations
 
 Sigma Designs Z-Wave controllers commonly use a host-to-controller protocol known as the Z-Wave Serial API.
 
@@ -243,7 +227,7 @@ The observed USB identification is consistent with hardware used for this type o
 
 However, this investigation has not established the exact Serial API version, command set or controller capabilities of the installed unit.
 
-Research Questions
+### Research Questions
 
 Further protocol-level inspection could determine:
 
@@ -256,84 +240,100 @@ Further protocol-level inspection could determine:
 
 Until these are verified, compatibility with any particular third-party Z-Wave software stack should not be assumed.
 
-9. Controller Ownership and Serial Access
+## Controller Ownership and Serial Access
 
 The stock Telldus application may maintain an active connection to the Z-Wave serial interface.
 
 This matters when attempting independent inspection.
 
-Concurrent Access
+### Concurrent Access
 
 Opening /dev/ttyACM1 from multiple applications can cause problems such as:
 
-* Competing reads
-* Unexpected consumption of controller responses
-* Interrupted message sequences
-* Application timeouts
-* Conflicting controller operations
+- Competing reads
+- Unexpected consumption of controller responses
+- Interrupted message sequences
+- Application timeouts
+- Conflicting controller operations
 
 The interface should not be treated as a broadcast data stream that multiple applications can safely read independently.
 
-Safe Inspection Approach
+### Safe Inspection Approach
 
 For initial investigation, read-only system information is preferable to sending undocumented commands to the controller.
 
 Commands that change Z-Wave network state, reset controller memory or modify inclusion information should be kept separate from basic interface identification.
 
-10. Read-Only Inspection Commands
+## Read-Only Inspection Commands
+
+The command blocks below are inspection examples, not captured session output.
 
 The following commands can be used on a device with authorized Linux shell access.
 
-Confirm the Serial Device
+### Confirm the Serial Device
 
+```text
 ls -l /dev/ttyACM1
+```
 
-Inspect USB Enumeration
+### Inspect USB Enumeration
 
+```text
 dmesg | grep -i -E 'usb|cdc_acm|ttyACM'
+```
 
-Inspect the Device’s Sysfs Information
+### Inspect the Device’s Sysfs Information
 
+```text
 cat /sys/class/tty/ttyACM1/device/uevent
+```
 
-Inspect USB Device Descriptors
+### Inspect USB Device Descriptors
 
 If the utility is installed:
 
+```text
 lsusb
+```
 
 To inspect the identified controller:
 
+```text
 lsusb -d 0658:0200
+```
 
-Inspect Driver Information
+### Inspect Driver Information
 
+```text
 ls -l /sys/class/tty/ttyACM1/device/driver
+```
 
-Identify Processes Using the Interface
+### Identify Processes Using the Interface
 
 If supported by the installed userspace:
 
+```text
 fuser /dev/ttyACM1
+```
 
 These commands are intended for observation.
 
 They do not deliberately send Z-Wave commands or modify controller state.
 
-11. Controller State and Network Data
+## Controller State and Network Data
 
 Z-Wave controllers may retain network-specific information, depending on their hardware and firmware architecture.
 
 Potentially sensitive data can include:
 
-* Network identifiers
-* Included-node information
-* Controller configuration
-* Security-related network material
+- Network identifiers
+- Included-node information
+- Controller configuration
+- Security-related network material
 
 The precise storage format and location on the examined controller have not been established.
 
-Publication Policy
+### Publication Policy
 
 No controller memory dump, security keys, complete network configuration or device-specific controller backup is included in this repository.
 
@@ -341,7 +341,7 @@ Any future protocol traces should be sanitized before publication.
 
 This is particularly important when documenting security-enabled Z-Wave networks.
 
-12. Potential Independent Integration
+## Potential Independent Integration
 
 The internal USB interface raises an interesting interoperability question:
 
@@ -351,21 +351,21 @@ The hardware architecture makes this a reasonable research direction.
 
 However, successful integration would depend on several unresolved factors.
 
-Compatibility Requirements
+### Compatibility Requirements
 
 An independent application would need to establish:
 
-* The actual controller protocol
-* Supported Serial API commands
-* Controller firmware compatibility
-* Correct initialization behavior
-* Exclusive access to the serial interface
-* Network-state preservation
-* Compatibility with the desired Z-Wave software stack
+- The actual controller protocol
+- Supported Serial API commands
+- Controller firmware compatibility
+- Correct initialization behavior
+- Exclusive access to the serial interface
+- Network-state preservation
+- Compatibility with the desired Z-Wave software stack
 
 The presence of /dev/ttyACM1 alone does not prove that a particular integration will work.
 
-Preservation of Existing Networks
+### Preservation of Existing Networks
 
 Experiments involving controller initialization or replacement software should distinguish between read-only discovery and operations that could alter existing network state.
 
@@ -373,7 +373,7 @@ Controller resets, exclusions and network reinitialization may affect previously
 
 No such destructive operation is required to establish the USB hardware identity.
 
-13. Firmware and Controller Update Research
+## Firmware and Controller Update Research
 
 The Z-Wave controller has its own firmware environment, distinct from the Atheros Linux operating system.
 
@@ -381,65 +381,66 @@ Updating the gateway’s Linux firmware does not necessarily imply that the Z-Wa
 
 Possible research areas include:
 
-* Controller firmware version reporting
-* Controller bootloader identification
-* Vendor-specific update mechanisms
-* Firmware compatibility constraints
-* Recovery capabilities
-* Relationship between gateway updates and controller updates
+- Controller firmware version reporting
+- Controller bootloader identification
+- Vendor-specific update mechanisms
+- Firmware compatibility constraints
+- Recovery capabilities
+- Relationship between gateway updates and controller updates
 
 No controller firmware update procedure has been verified in this research.
 
 No third-party controller firmware images are distributed.
 
-14. Areas for Further Investigation
+## Areas for Further Investigation
 
-14.1 Exact Controller Identification
+### Exact Controller Identification
 
 Determine the controller’s precise hardware model and revision using verified physical markings or protocol-level identification.
 
-14.2 Serial API Compatibility
+### Serial API Compatibility
 
 Establish whether the interface supports a standard Z-Wave Serial API implementation and identify its version.
 
-14.3 Application Protocol Analysis
+### Application Protocol Analysis
 
 Examine how the stock Telldus software initializes the controller, sends commands and processes responses.
 
-14.4 Controller Backup Support
+### Controller Backup Support
 
 Investigate whether supported controller-management interfaces provide a reliable backup mechanism without changing the active Z-Wave network.
 
-14.5 Independent Software Compatibility
+### Independent Software Compatibility
 
 Test interoperability with an alternative host software stack only after controller capabilities and network-state preservation requirements are understood.
 
-14.6 Hardware Signal Mapping
+### Hardware Signal Mapping
 
 Identify the controller’s physical connections to the internal USB architecture and document the relevant PCB layout.
 
-15. Findings and Limitations
+## Findings and Limitations
 
-Research area	Finding	Status
-Dedicated Z-Wave controller	Present	Confirmed
-Manufacturer identification	Sigma Designs	Confirmed
-USB vendor ID	0658	Observed
-USB product ID	0200	Observed
-Linux interface	/dev/ttyACM1	Confirmed
-USB driver	cdc_acm	Confirmed
-Internal USB connection	Kernel enumeration	Confirmed
-Separate RF433 controller	Present	Confirmed
-Telldus application integration	Z-Wave adapter components	Identified
-Exact controller chip	Not established	Further research
-Controller firmware version	Not established	Further research
-Serial API version	Not established	Further research
-Complete supported command set	Not established	Further research
-Controller backup support	Not established	Further research
-Third-party software compatibility	Not tested	Unknown
-Controller firmware replacement	Not tested	Unknown
-Complete electrical schematic	Not available	Further research
+| Research area | Finding | Status |
+| --- | --- | --- |
+| Dedicated Z-Wave controller | Present | Confirmed |
+| Manufacturer identification | Sigma Designs | Confirmed |
+| USB vendor ID | 0658 | Observed |
+| USB product ID | 0200 | Observed |
+| Linux interface | /dev/ttyACM1 | Confirmed |
+| USB driver | cdc_acm | Confirmed |
+| Internal USB connection | Kernel enumeration | Confirmed |
+| Separate RF433 controller | Present | Confirmed |
+| Telldus application integration | Z-Wave adapter components | Identified |
+| Exact controller chip | Not established | Further research |
+| Controller firmware version | Not established | Further research |
+| Serial API version | Not established | Further research |
+| Complete supported command set | Not established | Further research |
+| Controller backup support | Not established | Further research |
+| Third-party software compatibility | Not tested | Unknown |
+| Controller firmware replacement | Not tested | Unknown |
+| Complete electrical schematic | Not available | Further research |
 
-16. Research Significance
+## Research Significance
 
 The TellStick ZNet Lite V2 does not implement Z-Wave as a software-only function of its main Linux processor.
 
@@ -451,7 +452,7 @@ The available evidence establishes the physical and operating-system interface, 
 
 The most valuable next step is controller identification and protocol-level characterization without altering the existing Z-Wave network.
 
-Conclusion
+## Conclusion
 
 The TellStick ZNet Lite V2 exposes its internal Z-Wave controller through USB CDC ACM as /dev/ttyACM1.
 
@@ -461,17 +462,15 @@ The stock Telldus application uses this dedicated controller as part of its radi
 
 The confirmed discovery is the presence of an identifiable, separately connected Z-Wave controller. Its complete capabilities and interoperability with alternative software remain subjects for further investigation.
 
-⸻
+## Related Documentation
 
-Related Documentation
+- [Hardware Architecture](hardware.md)
+- [Firmware and Filesystem Analysis](firmware.md)
+- [UART Console and U-Boot](uart-and-uboot.md)
+- [RF433 Subsystem](rf433.md)
+- [Undocumented Wi-Fi](undocumented-wifi.md)
 
-* Hardware Architecture⁠￼
-* Firmware and Filesystem Analysis⁠￼
-* UART Console and U-Boot⁠￼
-* RF433 Subsystem⁠￼
-* Undocumented Wi-Fi⁠￼
-
-License and Disclaimer
+## License and Disclaimer
 
 This document contains independent research performed on personally owned hardware.
 
