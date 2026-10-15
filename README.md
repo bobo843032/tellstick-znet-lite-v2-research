@@ -1,5 +1,8 @@
 # TellStick ZNet Lite V2 — Hardware & Firmware Research
 
+[![Ask DeepWiki](https://img.shields.io/badge/Ask-DeepWiki-blue)](https://deepwiki.com/bobo843032/tellstick-znet-lite-v2-research)
+[![License: CC BY 4.0](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey)](https://creativecommons.org/licenses/by/4.0/)
+
 Independent reverse engineering, firmware analysis, and technical documentation of the Telldus TellStick ZNet Lite V2.
 
 The TellStick ZNet Lite V2 is a network-connected home automation gateway supporting 433 MHz devices and Z-Wave. Internally, it is an embedded Linux system based on the Atheros AR933x platform, with dedicated radio controllers, SPI flash storage, Ethernet networking, and an accessible serial console.
