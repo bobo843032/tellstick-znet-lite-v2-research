@@ -1,0 +1,66 @@
+# Firmware images, flash dumps and device-specific backups
+*.bin
+*.img
+*.rom
+*.dump
+*.trx
+*.squashfs
+*.jffs2
+*.mtd
+*.hex
+*.elf
+firmware-dumps/
+flash-dumps/
+backups/
+
+# Private keys and credentials
+.ssh/
+id_rsa
+id_rsa.*
+id_dsa
+id_dsa.*
+id_ecdsa
+id_ecdsa.*
+id_ed25519
+id_ed25519.*
+*.pem
+*.key
+*.p12
+*.pfx
+.env*
+secrets/
+private/
+
+# Unsanitized research material; only explicitly reviewed logs are publishable
+raw-logs/
+unsanitized/
+private-captures/
+*.pcap
+*.pcapng
+*.log
+logs/*
+!logs/boot-log-sanitized.txt
+docs/logs/*
+!docs/logs/boot-log-sanitized.txt
+
+# Python files
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# macOS and editor files
+.DS_Store
+.AppleDouble
+.idea/
+.vscode/
+*.swp
+*~
+
+# Temporary files
+*.tmp
+*.bak
+*.orig
+tmp/
+temp/
