@@ -1,8 +1,6 @@
 # TellStick ZNet Lite V2 research
 
-Independent research into the hardware and stock firmware of the TellStick ZNet Lite V2, with a focus on local operation when Telldus Live is unavailable. The examined firmware is version 1.3.2. This repository contains original documentation, a small experimental local-authentication plugin, and offline tests. It does not contain vendor firmware or a device-ready no-cloud patch.
-
-The work began with hardware, UART, bootloader, Wi-Fi, and firmware inspection. A later [report from ob-wn](https://github.com/bobo843032/tellstick-znet-lite-v2-research/issues/1) drew attention to UDP 30303 and led to a more focused analysis of the firmware's local interfaces. That report did not initiate the wider project.
+Independent research into the hardware and stock firmware of the TellStick ZNet Lite V2, with a focus on local operation when Telldus Live is unavailable. The examined firmware is version 1.3.2. This repository contains original documentation, an experimental local-authentication plugin, and offline tests.
 
 ## What is established
 
@@ -12,7 +10,9 @@ The work began with hardware, UART, bootloader, Wi-Fi, and firmware inspection. 
 - An independently written Python 2.7 plugin can use the firmware's existing API and JWT machinery. Its login, token approval, and selected API routes were exercised under MIPS user-mode emulation with synthetic settings and mocked devices. See [prototype](prototype/README.md) and [test record](docs/testing.md).
 - Stock Z-Wave components include local controller and command paths, but full local administration and radio behavior remain unverified. RF433 has a separate local command path. See [RF433](docs/rf433.md), [Z-Wave local paths](docs/zwave-local.md), and [no-cloud status](docs/no-cloud.md).
 
-These statements have different evidence levels. The project uses **STATICALLY VERIFIED**, **EXECUTED IN EMULATION**, **TESTED WITH MOCKED HARDWARE**, **VERIFIED ON PHYSICAL HARDWARE**, and **NOT YET VERIFIED** in the detailed documents. Emulated API calls do not demonstrate radio transmission or a safe installation on a gateway.
+## Validation
+
+Hardware inspection, UART, and Wi-Fi were verified on the examined unit. The firmware API/JWT and local-owner flows passed 8/8 tests under MIPS emulation with synthetic settings and devices; Z-Wave command paths passed 2/2 tests with mocked hardware. CherryPy TLS and the loopback HTTPS flow also passed. RF433 and Z-Wave radio delivery and installation of the local-owner prototype have not been physically tested. See [offline tests](docs/testing.md) for methods and limits.
 
 ## Local architecture
 
@@ -26,7 +26,7 @@ Telldus Live OpenID -> stock token approval
                   +-- experimental local owner provider (offline prototype only)
 ```
 
-The prototype retains the stock token format and API dispatcher. It adds an owner login and an approval page, while a separate offline server draft uses CherryPy's existing TLS support. It is **not an installation package**. Certificate trust for a device IP address, the stock firewall, compatibility with third-party token clients, and a dependable rollback path still need work. Nothing in this repository should be copied onto a gateway without a separate review and hardware test plan.
+The prototype retains the stock token format and API dispatcher. It adds an owner login and an approval page, while a separate server draft uses CherryPy's existing TLS support. Deployment requirements and unresolved integration work are detailed in [no-cloud status](docs/no-cloud.md).
 
 ## Read next
 
@@ -36,7 +36,7 @@ The prototype retains the stock token format and API dispatcher. It adds an owne
 - [No-cloud design and remaining work](docs/no-cloud.md) · [offline tests](docs/testing.md)
 - [References and attribution](docs/references.md) · [security policy](SECURITY.md)
 
-The [prototype README](prototype/README.md) explains which files are original code and why the prototype must remain offline. Test instructions require a separately obtained copy of firmware 1.3.2; the firmware, extracted filesystem, bytecode, device backups, and secrets are not distributed here.
+The [prototype README](prototype/README.md) describes the original code. The [test instructions](docs/testing.md) explain the separately obtained firmware required to reproduce the offline results.
 
 ## Acknowledgements
 
