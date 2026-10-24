@@ -30,7 +30,7 @@ The prototype retains the stock token format and API dispatcher. It adds an owne
 
 ## Read next
 
-- [Hardware and UART](docs/hardware.md) · [bootloader](docs/uart-and-uboot.md) · [firmware](docs/firmware.md)
+- [Hardware and UART](docs/hardware.md) · [bootloader](docs/uart-and-uboot.md) · [firmware](docs/firmware.md) · [updates and recovery](docs/update-and-recovery.md)
 - [Local interfaces and API](docs/interfaces.md) · [authentication and TLS](docs/authentication.md)
 - [RF433](docs/rf433.md) · [Z-Wave hardware](docs/zwave.md) · [Z-Wave local paths](docs/zwave-local.md)
 - [No-cloud design and remaining work](docs/no-cloud.md) · [offline tests](docs/testing.md) · [hardware readiness](docs/hardware-readiness.md)

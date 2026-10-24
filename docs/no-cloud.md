@@ -2,6 +2,18 @@
 
 This project is investigating a path that retains the stock 1.3.2 firmware and its local radio stack while removing Telldus Live as a prerequisite for ordinary owner access. It is not currently an installable firmware patch or a complete Home Assistant integration.
 
+## Options compared
+
+| Route | What it preserves | Main gap | Assessment |
+| --- | --- | --- | --- |
+| Existing stock JWT | Original API, RF433, and Z-Wave stack | New approval still depends on Telldus Live; stock transport is HTTP | Useful only where a valid token already exists; not durable onboarding |
+| Local owner plugin in the stock process, staged through overlay | Original token table, JWT/API, and radio stack | Verified device access, TLS, overlay persistence, and rollback | **Recommended first controlled integration**, after readiness gates |
+| Shadow or modify stock auth/web modules | Original operating system and radios | Larger version-specific patch surface and the same transport/recovery gates | Possible, but no advantage established over the plugin |
+| Repackaged stock firmware | Existing application if licensing and integration permit | Vendor update signature, image format, full-flash risk, recovery, redistribution rights | Research option; not needed for the demonstrated local approval flow |
+| New OpenWrt-based firmware | Potentially modern operating-system stack | Board port, 16 MB/64 MB limits, radio protocols, state migration, and recovery | Long-term separate project; not yet validated for this board |
+
+The approval compatibility fix already redirects successful HTTPS token requests to the local page while leaving the stock issuer intact. A second independent process cannot use the pending requests stored in the stock process's `ApiManager.tokens`. An overlay that loads the local plugin in that process is therefore more direct than a sidecar. A loopback test also passed with the Live **web-authentication** provider omitted and rejected stock approval through a local session; it did not remove or validate the Live backend used elsewhere in the application. The overlay is a filesystem change, but it does **not** require replacing the SquashFS firmware image. For firmware-update and preservation details, see [update and recovery paths](update-and-recovery.md).
+
 ## What the evidence supports
 
 - **STATICALLY VERIFIED:** The firmware has local RF433 event/command handling, a token-protected HTTP API, and internal Z-Wave controller code. Some API dispatch paths do not make a cloud call when a valid local token already exists.
@@ -13,7 +25,7 @@ The local web prototype displays synthetic system information, devices, and sens
 
 ## What still prevents a supported installation
 
-1. **Token approval compatibility.** The stock response points to the original OpenID route. The local plugin now rewrites that approval URL only for successful HTTPS token requests; offline login/approval tests pass. Third-party clients and physical deployment still need validation.
+1. **Token approval compatibility and route isolation.** The stock response points to the original OpenID route. The local plugin now rewrites that approval URL only for successful HTTPS token requests; offline login/approval tests pass. Because the stock web router accepts any registered authentication provider, a local provider alone cannot veto stock approval through a separate Live session. A local-only release must close or harden that old route, then retest third-party clients and the physical deployment.
 2. **Transport.** The test server used TLS on loopback, but the stock firewall does not open the proposed HTTPS port. A trustworthy certificate for the gateway address, a deliberately scoped network rule, and proof that no alternate HTTP login path bypasses protection are required.
 3. **Overlay and rollback.** SquashFS with an overlay suggests a possible non-flashing deployment. Actual free space, import order, startup ownership, service recovery, backup integrity, and persistence through an update have not been checked on a device. No public installer is supplied.
 4. **Device data and RF433.** The existing [R00S local integration](references.md) offers a practical RF433 baseline; its model and event coverage must be checked against an owned unit. The stock UDP listener permits only one registered receiver. Radio delivery and state synchronization remain untested in this research phase.

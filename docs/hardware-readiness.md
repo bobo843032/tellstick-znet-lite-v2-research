@@ -1,6 +1,6 @@
 # First gateway test: readiness gates
 
-The local-owner prototype has passed software tests against firmware 1.3.2 modules. The next activity is a **read-only preflight on an owned gateway**, not installation. The earlier [UART work](uart-and-uboot.md) documents a physical Linux console at the time of that study, but it does not prove that SSH, a root shell, or writable overlay access is available now.
+The local-owner prototype has passed software tests against firmware 1.3.2 modules. The next activity is a **read-only preflight on an owned gateway**, not installation. The earlier [UART work](uart-and-uboot.md) documents a bidirectional physical console. The owner also reports a root shell and subsequent SSH login during that earlier session. The retained documents do not include the `id` output, a successful SSH transcript, or the exact Dropbear change, and they do not prove that either access path works now. Historical access makes an overlay deployment more plausible; it does not complete the present access or rollback checks.
 
 ## Access and baseline
 
@@ -24,8 +24,10 @@ The stock `ApiManager` keeps pending token requests in process memory. A separat
 
 ## Backup and rollback gate
 
-Before any future write, an authorized operator needs an independent recovery channel and verified backups of the current startup file, overlay upper layer, `/etc/telldus/Telldus.conf`, and all known Z-Wave controller state that can actually be exported. These may contain credentials or network keys: preserve them in encrypted, access-controlled storage, verify checksums and restore readability, and keep values out of public logs. Determine overlay capacity, file ownership, and the exact service startup path on the device rather than relying solely on the firmware image.
+Before any future write, an authorized operator needs an independent recovery channel and verified backups of the current startup file, overlay upper layer, `/etc/telldus/Telldus.conf`, and all known Z-Wave controller state that can actually be exported. These may contain credentials or network keys: preserve them in encrypted, access-controlled storage, verify checksums and restore readability, and keep values out of public logs. A full flash backup was historically reported, but its file and checksum were not located in the current research/handoff storage review; it cannot yet serve as a verified rollback artifact. Determine overlay capacity, file ownership, and the exact service startup path on the device rather than relying solely on the firmware image.
 
 The proposed change must be staged as a removable overlay with an explicit return to the original startup and web/API behavior. A serial or other independent administrative path must be tested before relying on that rollback. Preserving `Telldus.conf` alone may not preserve controller nonvolatile memory. **Installation is NO-GO until the backup and rollback path, TLS certificate trust, required firewall access, and absence of an alternate insecure owner-login route are verified on the actual gateway.**
+
+The vendor-managed updater requires a valid detached signature before flashing, while the ordinary sysupgrade configuration list does not include the proposed startup shadow or Python plugin package. Therefore a future overlay installation must document how it is disabled, restored, or deliberately re-applied across a firmware upgrade. The board's inspected flash map does not show a redundant firmware slot. See [update and recovery paths](update-and-recovery.md) before planning either an overlay write or a custom image.
 
 The first hardware session should end after network identity, firmware identification, harmless API rejection/response, safe authentication-path assessment, and relevant logs. It must not register the plugin, install files, restart services, include or exclude Z-Wave nodes, or transmit RF433 commands.

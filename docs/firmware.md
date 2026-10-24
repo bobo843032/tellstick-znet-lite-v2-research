@@ -10,7 +10,7 @@ The firmware includes a U-Boot bootloader, Linux kernel, compressed root filesys
 
 This document covers the firmware environment observed on a TellStick ZNet Lite V2 running stock firmware version 1.3.2.
 
-The investigation was performed using serial console access, Linux shell inspection, captured boot messages, filesystem examination, and a privately preserved flash backup.
+The earlier investigation used serial console access, Linux shell inspection, captured boot messages, and filesystem examination. A complete private flash backup was reported at the time, but its present file and checksum have not been located in the current research storage.
 
 The objective is to document the firmware architecture, identify its major components, and distinguish confirmed behavior from areas requiring further analysis.
 
@@ -369,25 +369,7 @@ The firmware also references a GPG keyring used in the upgrade environment:
 /etc/upgrade/telldus.gpg
 ```
 
-### Interpretation
-
-These components indicate that the firmware includes a dedicated upgrade implementation and cryptographic key material associated with the update process.
-
-However, the existence of a GPG keyring alone does not prove that every firmware installation path enforces signature verification.
-
-Establishing the complete trust model would require examination of the upgrade script’s validation logic, accepted image formats, error handling and bootloader recovery behavior.
-
-### Areas Requiring Further Analysis
-
-- Firmware package format
-- Version validation
-- Signature verification and failure handling
-- Download and staging process
-- Partition writing behavior
-- Recovery after interrupted upgrades
-- Relationship between Linux-based upgrades and U-Boot HTTP recovery
-
-No unsupported claim is made that signature enforcement can be bypassed or that arbitrary firmware images will be accepted.
+The vendor updater checks declared file size and SHA-1, then requires successful GPG verification of a detached signature before it invokes `sysupgrade`. The downstream `sysupgrade` path performs board/image-format checks and writes the single aggregate firmware MTD region; it is a different trust boundary from the vendor downloader. The proposed local plugin is absent from the ordinary sysupgrade preservation list, so its persistence through an upgrade cannot be assumed. The exact control paths, offline verification, and recovery limits are in [firmware update and recovery paths](update-and-recovery.md).
 
 ## Remote-Support Components
 
@@ -482,9 +464,9 @@ Their output may nevertheless contain identifying information and should be revi
 
 ## Firmware Backup and Evidence Handling
 
-A complete flash backup was obtained during the research and preserved privately.
+A complete flash backup was reported during the earlier research. Its current file location, checksum, and restore readiness have not been verified in this phase.
 
-The backup process included the device’s original firmware and hardware-specific flash contents.
+The reported full-flash capture would include the original firmware and hardware-specific flash contents; the actual image has not been re-examined.
 
 ### Memory Constraints
 
@@ -528,7 +510,7 @@ Selected technical observations, sanitized logs and independently authored docum
 | Integrated Wi-Fi | Functional | Tested |
 | Remote-support package | Installed | Confirmed |
 | Embedded SSH private key | Identified | Confirmed |
-| Full flash backup | Preserved privately | Completed |
+| Full flash backup | Historically reported; current artifact not located in reviewed storage | Requires verification before any write |
 | Complete firmware upgrade trust model | Not fully established | Further research |
 | Reproducible firmware build | Not established | Further research |
 | All hardware revisions | Not tested | Unknown |

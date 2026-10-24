@@ -9,8 +9,11 @@ All results below were recorded on 2026-10-24 against the official TellStick ZNe
 | CherryPy TLS | Original CherryPy serving a temporary loopback certificate | PASS | No real address certificate |
 | Local-owner integration | [`test_firmware_integration.py`](../tests/test_firmware_integration.py), original API/JWT modules with synthetic settings and devices | 9/9 PASS, including the original 8 tests and token-approval URL regression | No serial or radio hardware |
 | End-to-end HTTPS | [`run_local_https_probe.sh`](../tests/run_local_https_probe.sh), actual CherryPy routing, local login, approval, JWT, API read and mocked device operation, logout | PASS | Loopback only; synthetic account and devices |
+| Local-only web provider configuration | Same HTTPS probe with `LOCALOWNER_LOCAL_ONLY=1`; no Live web-authentication provider registered | PASS: local flow and stock approval POST rejected by web authorization | Live backend and physical application startup not exercised |
 | Z-Wave command paths | [`test_zwave_offline.py`](../tests/test_zwave_offline.py), original node/controller bytecode with fake serial/message sink | 2/2 PASS | No Z-Wave network or transmission |
 | Local UI | JavaScript syntax check and authenticated serving over loopback HTTPS | PASS | No visual mobile-browser test |
+| Stock `system/info` authorization | [`test_original_system_info_http.py`](../tests/test_original_system_info_http.py), original CherryPy/API modules over loopback HTTP | 6/6 PASS: missing, empty, wrong-format, invalid, expired, valid JWT | Valid case uses synthetic board values; no physical gateway |
+| Vendor upgrade verifier | [`test_stock_upgrade_verification.py`](../tests/test_stock_upgrade_verification.py), original `tellstick-upgrade.py:verifyFile` | 4/4 PASS: size, SHA-1, GPG rejection, and simulated GPG success | GPG subprocess is mocked; no vendor signature or flash tested |
 
 In the integration test, owner login, rate limiting, CSRF rejection, session timeout/logout, valid and invalid JWTs, expired tokens, renewal, and the stock system/device/sensor routes were exercised. The additional test checked the HTTPS approval URL, login return path, and unchanged stock response on HTTP. The provider kept the original Telldus Live class importable. The end-to-end probe exercised the approval URL and unauthenticated browser return path with short-lived synthetic credentials and a temporary certificate, then stopped its server and deleted test files.
 
@@ -31,8 +34,16 @@ export QEMU_MIPS=/path/to/qemu-mips
 "$QEMU_MIPS" -L "$FIRMWARE_ROOTFS" \
   -E PYTHONHOME="$FIRMWARE_ROOTFS/usr" \
   "$FIRMWARE_ROOTFS/usr/bin/python2.7" tests/test_zwave_offline.py
+"$QEMU_MIPS" -L "$FIRMWARE_ROOTFS" \
+  -E PYTHONHOME="$FIRMWARE_ROOTFS/usr" \
+  "$FIRMWARE_ROOTFS/usr/bin/python2.7" tests/test_original_system_info_http.py
+"$QEMU_MIPS" -L "$FIRMWARE_ROOTFS" \
+  -E PYTHONHOME="$FIRMWARE_ROOTFS/usr" \
+  -E FIRMWARE_ROOTFS="$FIRMWARE_ROOTFS" \
+  "$FIRMWARE_ROOTFS/usr/bin/python2.7" tests/test_stock_upgrade_verification.py
 sh tests/run_tls_probe.sh
 sh tests/run_local_https_probe.sh
+LOCALOWNER_LOCAL_ONLY=1 sh tests/run_local_https_probe.sh
 ```
 
 The two shell probes bind only to `127.0.0.1`, create temporary synthetic TLS material and credentials, and remove them on exit. Do not run them where the test ports are assigned to another service.

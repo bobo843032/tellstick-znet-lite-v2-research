@@ -509,7 +509,7 @@ Before modifying firmware, relevant considerations include:
 - Maintaining reliable serial access
 - Avoiding interruption during flash operations
 
-A full flash backup was preserved privately during this research.
+A full flash backup was reported during this research. Its current location and checksum were not found in the reviewed research and handoff storage, so it is not yet a verified recovery artifact.
 
 No device-specific firmware image or calibration data is distributed in this repository.
 
