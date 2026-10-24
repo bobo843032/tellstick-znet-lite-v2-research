@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TellStick Local — Offline Prototype</title>
+<style>
+:root{color-scheme:dark;font:16px system-ui;background:#10151c;color:#ecf2f7}
+body{margin:0;padding:24px;max-width:1000px;margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+h1{font-size:1.7rem;margin:.2rem 0}h2{font-size:1.15rem}small,.muted{color:#aebdcb}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:20px}
+.card{background:#1b2632;border:1px solid #35485a;border-radius:16px;padding:18px;min-width:0}
+button,input{font:inherit;border-radius:9px;padding:9px}button{background:#3d8dc2;color:white;border:0;cursor:pointer;margin:4px 4px 4px 0}
+button:disabled{opacity:.4}input{background:#10151c;color:white;border:1px solid #50677c;max-width:100%}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px solid #35485a;padding:10px 0}
+label{display:block;margin:10px 0}.error{color:#ffb9b9;white-space:pre-wrap}
+</style></head><body>
+<header><div><h1>TellStick Local</h1><small>Offline UI prototype · no cloud</small></div><span id="transport"></span></header>
+<div class="grid">
+<section class="card"><h2>Local API token</h2>
+<p class="muted">Held only in browser memory. Use a protected HTTPS connection.</p>
+<label>Existing token <input id="token" type="password" autocomplete="off" placeholder="Paste token"></label>
+<button id="use">Use token</button><button id="request">Request new token</button>
+<a href="/localowner/login">Local owner login</a> · <a href="/localowner/logout">Log out</a>
+<p id="pending" class="muted"></p><button id="fetch" hidden>Fetch approved token</button>
+</section>
+<section class="card"><h2>System</h2><div id="system" class="muted">No data loaded.</div><button id="refresh">Refresh</button></section>
+<section class="card"><h2>Devices</h2><div id="devices" class="muted">No data loaded.</div></section>
+<section class="card"><h2>Sensors</h2><div id="sensors" class="muted">No data loaded.</div></section>
+</div><p id="error" class="error" role="alert"></p>
+<script>
+"use strict";
+let token = "";
+let pending = sessionStorage.getItem("tellstick-pending") || "";
+const byId = id => document.getElementById(id);
+const secure = location.protocol === "https:";
+byId("transport").textContent = secure ? "HTTPS" : "HTTPS required";
+function showError(message){byId("error").textContent=String(message || "");}
+function line(container, title, value){
+  const row=document.createElement("div");row.className="row";
+  const a=document.createElement("span");a.textContent=String(title);
+  const b=document.createElement("span");b.textContent=String(value);
+  row.append(a,b);container.append(row);
+}
+async function api(path, options={}){
+  if(!secure) throw new Error("HTTPS required");
+  const headers={...(options.headers||{})}; if(token)headers.Authorization="Bearer "+token;
+  const result=await fetch("/api/"+path,{...options,headers,credentials:"same-origin"});
+  const data=await result.json();
+  if(!result.ok)throw new Error(data.error||("HTTP "+result.status));
+  return data;
+}
+function pendingView(){
+  byId("pending").replaceChildren();
+  if(pending){
+    const link=document.createElement("a");
+    link.href="/localowner/approve?token="+encodeURIComponent(pending);
+    link.textContent="Approve pending request";
+    byId("pending").append(link);
+  }
+  byId("fetch").hidden=!pending;
+}
+async function refresh(){
+  showError("");if(!token){showError("Enter a local API token first.");return;}
+  try{
+    const [system,devices,sensors]=await Promise.all([
+      api("system/info"),api("devices/list"),api("sensors/list?includeValues=1&includeLastUpdated=1")]);
+    for(const name of ["system","devices","sensors"])byId(name).replaceChildren();
+    line(byId("system"),"Product",system.product||"Unknown");
+    line(byId("system"),"Firmware",system.version||"Unknown");
+    line(byId("system"),"Time",system.time||"Unknown");
+    for(const item of devices.device||[]){
+      const row=document.createElement("div");row.className="row";
+      const name=document.createElement("span");name.textContent=(item.name||"Device")+" · "+String(item.state);
+      const controls=document.createElement("span");
+      for(const [label,action] of [["On","turnOn"],["Off","turnOff"]]){
+        const btn=document.createElement("button");btn.textContent=label;
+        btn.onclick=async()=>{if(!confirm("Send "+label+" to "+(item.name||item.id)+"?"))return;
+          try{await api("device/"+action+"?id="+encodeURIComponent(item.id));await refresh();}
+          catch(e){showError(e.message);}};
+        controls.append(btn);
+      }
+      row.append(name,controls);byId("devices").append(row);
+    }
+    if(!(devices.device||[]).length)byId("devices").textContent="No devices.";
+    for(const item of sensors.sensor||[])line(byId("sensors"),item.name||item.id,
+      Object.entries(item).filter(([k])=>!["name","id","model","protocol","sensorId"].includes(k))
+        .map(([k,v])=>k+": "+v).join(" · ")||"No values");
+    if(!(sensors.sensor||[]).length)byId("sensors").textContent="No sensors.";
+  }catch(e){showError(e.message);}
+}
+byId("use").onclick=()=>{token=byId("token").value.trim();byId("token").value="";refresh();};
+byId("refresh").onclick=refresh;
+byId("request").onclick=async()=>{
+  try{
+    const data=await api("token",{method:"PUT",headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:new URLSearchParams({app:"TellStick Local UI"})});
+    pending=data.token;sessionStorage.setItem("tellstick-pending",pending);pendingView();
+    showError("Request created. Approve it with the link above, then return and fetch the token.");
+  }catch(e){showError(e.message);}
+};
+byId("fetch").onclick=async()=>{
+  try{const data=await api("token?token="+encodeURIComponent(pending));
+    token=data.token;pending="";sessionStorage.removeItem("tellstick-pending");pendingView();refresh();}
+  catch(e){showError(e.message);}
+};
+pendingView();
+</script></body></html>

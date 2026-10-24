@@ -17,3 +17,7 @@ Documenting a component or including a short technical excerpt does not grant
 permission to redistribute the underlying firmware or third-party code.
 Independently written software added later requires an explicit software
 license; CC BY 4.0 is not assigned to it by this documentation notice.
+
+The original source files in `prototype/` and `tests/` are licensed under
+the MIT License in `LICENSE-CODE`. Vendor firmware and third-party code are
+not included in that grant.

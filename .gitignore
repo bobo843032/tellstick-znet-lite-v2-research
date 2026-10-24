@@ -64,3 +64,13 @@ venv/
 *.orig
 tmp/
 temp/
+
+# Offline prototype test artifacts and local firmware extraction
+extracted/
+rootfs/
+firmware/
+*owner.json
+*Telldus.conf
+*.sqlite*
+tests/local-https.*/
+tests/tls-probe.*/
