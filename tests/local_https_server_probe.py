@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 import time
 import sys
+import os
 from base import Application
 from api import ApiManager
 from telldus import DeviceApiManager
-from tellduslive.web import WebRequestHandler as LiveProvider
 from localowner import LocalOwnerAuth, LocalHttpsServer
+
+if os.environ.get('LOCALOWNER_LOCAL_ONLY') != '1':
+    from tellduslive.web import WebRequestHandler as LiveProvider
+else:
+    LiveProvider = None
 
 class FakeSettings(dict):
     sections = {}
@@ -48,7 +53,8 @@ api_module.Board.firmwareVersion = staticmethod(lambda: '1.3.2-test')
 app = Application(run=False)
 ctx = app.pluginContext
 ApiManager(ctx)
-LiveProvider(ctx)
+if LiveProvider is not None:
+    LiveProvider(ctx)
 LocalOwnerAuth(ctx)
 LocalHttpsServer(ctx)
 while True:

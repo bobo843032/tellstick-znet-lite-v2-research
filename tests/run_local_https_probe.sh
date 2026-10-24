@@ -125,6 +125,7 @@ curl --silent --fail --cacert "$TEMP_DIR/cert.pem" --request PUT \
   --data-urlencode 'app=second-synthetic-client' \
   https://127.0.0.1:18444/api/token >"$TEMP_DIR/request2.json"
 auth_url2="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["authUrl"])' "$TEMP_DIR/request2.json")"
+req2="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["token"])' "$TEMP_DIR/request2.json")"
 unauth_approval="$(curl --silent --output /dev/null --write-out '%{http_code}' \
   --cacert "$TEMP_DIR/cert.pem" -c "$TEMP_DIR/cookies" -b "$TEMP_DIR/cookies" "$auth_url2")"
 test "$unauth_approval" = 303
@@ -142,4 +143,12 @@ curl --silent --fail --cacert "$TEMP_DIR/cert.pem" \
   -c "$TEMP_DIR/cookies" -b "$TEMP_DIR/cookies" \
   "$auth_url2" >"$TEMP_DIR/approval2.html"
 grep -q 'Approve API token' "$TEMP_DIR/approval2.html"
+if [ "${LOCALOWNER_LOCAL_ONLY:-0}" = 1 ]; then
+  # A local owner session cannot authorize the stock, CSRF-unprotected route.
+  stock_approval="$(curl --silent --output /dev/null --write-out '%{http_code}' \
+    --cacert "$TEMP_DIR/cert.pem" -c "$TEMP_DIR/cookies" -b "$TEMP_DIR/cookies" \
+    --data-urlencode "token=$req2" --data-urlencode 'ttl=1440' \
+    https://127.0.0.1:18444/api/authorize)"
+  test "$stock_approval" = 303
+fi
 echo "local provider HTTPS, owner login, token approval, stock JWT/API: PASS"
