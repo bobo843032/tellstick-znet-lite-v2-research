@@ -8,6 +8,11 @@ The research is conducted on personally owned hardware and is not affiliated wit
 
 This repository is not an official firmware distribution or security support channel.
 
+The local-owner code in `prototype/` is an offline experiment, not a tested
+security patch or an installation package. It has not been deployed on a
+TellStick, and its hardware, network, certificate, and rollback assumptions
+remain unverified.
+
 ## Reporting Security Vulnerabilities
 
 If you discover a potential security vulnerability related to the research documented here, please avoid publishing sensitive exploitation details, credentials, private keys, or device-specific information in a public GitHub issue.
