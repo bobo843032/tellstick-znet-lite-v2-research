@@ -13,7 +13,7 @@ The local web prototype displays synthetic system information, devices, and sens
 
 ## What still prevents a supported installation
 
-1. **Token approval compatibility.** The stock token-request response still points to the original OpenID approval route. A narrow, tested compatibility change is needed without altering JWT semantics or weakening the existing provider.
+1. **Token approval compatibility.** The stock response points to the original OpenID route. The local plugin now rewrites that approval URL only for successful HTTPS token requests; offline login/approval tests pass. Third-party clients and physical deployment still need validation.
 2. **Transport.** The test server used TLS on loopback, but the stock firewall does not open the proposed HTTPS port. A trustworthy certificate for the gateway address, a deliberately scoped network rule, and proof that no alternate HTTP login path bypasses protection are required.
 3. **Overlay and rollback.** SquashFS with an overlay suggests a possible non-flashing deployment. Actual free space, import order, startup ownership, service recovery, backup integrity, and persistence through an update have not been checked on a device. No public installer is supplied.
 4. **Device data and RF433.** The existing [R00S local integration](references.md) offers a practical RF433 baseline; its model and event coverage must be checked against an owned unit. The stock UDP listener permits only one registered receiver. Radio delivery and state synchronization remain untested in this research phase.

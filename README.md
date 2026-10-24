@@ -12,7 +12,7 @@ Independent research into the hardware and stock firmware of the TellStick ZNet 
 
 ## Validation
 
-Hardware inspection, UART, and Wi-Fi were verified on the examined unit. The firmware API/JWT and local-owner flows passed 8/8 tests under MIPS emulation with synthetic settings and devices; Z-Wave command paths passed 2/2 tests with mocked hardware. CherryPy TLS and the loopback HTTPS flow also passed. RF433 and Z-Wave radio delivery and installation of the local-owner prototype have not been physically tested. See [offline tests](docs/testing.md) for methods and limits.
+Hardware inspection, UART, and Wi-Fi were verified on the examined unit. The firmware API/JWT and local-owner flows passed 9/9 tests under MIPS emulation with synthetic settings and devices, including the original eight tests and a new token-approval compatibility test. Z-Wave command paths passed 2/2 tests with mocked hardware. CherryPy TLS and the loopback HTTPS flow also passed. RF433 and Z-Wave radio delivery and installation of the local-owner prototype have not been physically tested. See [offline tests](docs/testing.md) for methods and limits.
 
 ## Local architecture
 
@@ -26,21 +26,21 @@ Telldus Live OpenID -> stock token approval
                   +-- experimental local owner provider (offline prototype only)
 ```
 
-The prototype retains the stock token format and API dispatcher. It adds an owner login and an approval page, while a separate server draft uses CherryPy's existing TLS support. Deployment requirements and unresolved integration work are detailed in [no-cloud status](docs/no-cloud.md).
+The prototype retains the stock token format and API dispatcher. It adds an owner login and an approval page and, on HTTPS token requests, directs the stock approval link to that local page. A separate server draft uses CherryPy's existing TLS support. Deployment requirements and unresolved integration work are detailed in [no-cloud status](docs/no-cloud.md).
 
 ## Read next
 
 - [Hardware and UART](docs/hardware.md) · [bootloader](docs/uart-and-uboot.md) · [firmware](docs/firmware.md)
 - [Local interfaces and API](docs/interfaces.md) · [authentication and TLS](docs/authentication.md)
 - [RF433](docs/rf433.md) · [Z-Wave hardware](docs/zwave.md) · [Z-Wave local paths](docs/zwave-local.md)
-- [No-cloud design and remaining work](docs/no-cloud.md) · [offline tests](docs/testing.md)
+- [No-cloud design and remaining work](docs/no-cloud.md) · [offline tests](docs/testing.md) · [hardware readiness](docs/hardware-readiness.md)
 - [References and attribution](docs/references.md) · [security policy](SECURITY.md)
 
 The [prototype README](prototype/README.md) describes the original code. The [test instructions](docs/testing.md) explain the separately obtained firmware required to reproduce the offline results.
 
 ## Acknowledgements
 
-Thanks to [ob-wn](https://github.com/bobo843032/tellstick-znet-lite-v2-research/issues/1) for identifying the unauthenticated UDP 30303 interface, which prompted closer examination of the relevant firmware components. The [ob-wn no-cloud project](https://github.com/ob-wn/tellstick-znet-lite-v2-nocloud) provides a separate approach to local access. [R00S's local TellStick add-on](https://github.com/R00S/addon-tellstick-local) demonstrates a Home Assistant path for supported local RF433 functions. Their code has not been copied into this prototype; see [references](docs/references.md) for scope and licenses.
+The hardware and firmware investigation began before [issue #1](https://github.com/bobo843032/tellstick-znet-lite-v2-research/issues/1). Thanks to ob-wn for identifying the unauthenticated UDP 30303 interface there; that lead prompted closer examination of the relevant firmware components. The [ob-wn no-cloud project](https://github.com/ob-wn/tellstick-znet-lite-v2-nocloud) provides a separate approach to local access. [R00S's local TellStick add-on](https://github.com/R00S/addon-tellstick-local) demonstrates a Home Assistant path for supported local RF433 functions. Their code has not been copied into this prototype; see [references](docs/references.md) for scope and licenses.
 
 ## License and scope
 
