@@ -11,17 +11,47 @@ import os
 import stat
 import time
 import threading
+import urllib
 
 import cherrypy
 from api import ApiManager
 from base import Plugin, implements
 from web.base import IWebRequestAuthenticationHandler, IWebRequestHandler
-from web.base.Server import WebResponse
+from web.base.Server import WebResponse, WebResponseJson, WebResponseRedirect
 
 OWNER_FILE = os.environ.get('LOCALOWNER_FILE', '/etc/telldus/local-owner.json')
 SESSION_SECONDS = 1800
 REQUEST_SECONDS = 600
 ALLOWED_TTL_MINUTES = (1440, 10080, 40320, 525600)
+_AUTH_URL_INSTALLED = False
+
+def install_local_auth_url():
+    """Change only the approval link in successful stock token requests."""
+    global _AUTH_URL_INSTALLED
+    if _AUTH_URL_INSTALLED:
+        return
+    stock_handle_request = ApiManager.handleRequest
+
+    def handle_request(manager, plugin, path, params, request, **kwargs):
+        response = stock_handle_request(manager, plugin, path, params, request, **kwargs)
+        if path != 'token' or request.method() != 'PUT' or not isinstance(response, WebResponseJson):
+            return response
+        try:
+            payload = json.loads(response.data)
+            token = payload.get('token')
+            base = request.base()
+            expected = '%s/api/authorize?token=%s' % (base, token)
+            if (not token or not base.startswith('https://') or
+                    cherrypy.request.scheme != 'https' or payload.get('authUrl') != expected):
+                return response
+            payload['authUrl'] = '%s/localowner/approve?token=%s' % (
+                base, urllib.quote(token, safe=''))
+            return WebResponseJson(payload, statusCode=response.statusCode)
+        except (AttributeError, TypeError, ValueError):
+            return response
+
+    ApiManager.handleRequest = handle_request
+    _AUTH_URL_INSTALLED = True
 
 class HtmlResponse(WebResponse):
     def __init__(self, page, code=200):
@@ -47,6 +77,7 @@ class LocalOwnerAuth(Plugin):
     implements(IWebRequestAuthenticationHandler, IWebRequestHandler)
 
     def __init__(self):
+        install_local_auth_url()
         self._owner = None
         self._owner_mtime = None
         self._failures = {}
@@ -175,9 +206,13 @@ class LocalOwnerAuth(Plugin):
             self._record_login(ip, ok)
             if not ok:
                 return self._page('Rejected', '<p>Invalid owner credential.</p>', 403)
+            pending = request.session('localowner_pending_token')
             cherrypy.session.regenerate()
             request.setSession('localowner_authenticated', True)
             request.setSession('localowner_until', time.time()+SESSION_SECONDS)
+            request.setSession('localowner_pending_token', None)
+            if pending and pending in ApiManager(self.context).tokens:
+                return WebResponseRedirect('approve?token=' + urllib.quote(pending, safe=''))
             return self._page('Logged in', '<p>Local owner session active.</p>'
                               '<p><a href="/localowner/dashboard">Open local dashboard</a></p>'
                               '<p>Open /localowner/approve?token=REQUEST_ID to approve a pending API request.</p>')
@@ -200,6 +235,11 @@ class LocalOwnerAuth(Plugin):
             return self._page('Logged out', '<p>Local session invalidated.</p>')
         if path == 'approve':
             if not self.isUrlAuthorized(request):
+                token = params.get('token', '')
+                if (request.method() == 'GET' and token and
+                        token in ApiManager(self.context).tokens):
+                    request.setSession('localowner_pending_token', token)
+                    return WebResponseRedirect('login')
                 return self._page('Owner login required', '', 403)
             token = params.get('token', '')
             manager = ApiManager(self.context)  # Real stock ApiManager instance.

@@ -73,6 +73,8 @@ request_code="$(curl --silent --output "$TEMP_DIR/request.json" --write-out '%{h
 test "$request_code" = 200
 req="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["token"])' "$TEMP_DIR/request.json")"
 test -n "$req"
+auth_url="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["authUrl"])' "$TEMP_DIR/request.json")"
+test "$auth_url" = "https://127.0.0.1:18444/localowner/approve?token=$req"
 approve_code="$(curl --silent --output "$TEMP_DIR/approve.html" --write-out '%{http_code}' \
   --cacert "$TEMP_DIR/cert.pem" -c "$TEMP_DIR/cookies" -b "$TEMP_DIR/cookies" \
   "https://127.0.0.1:18444/localowner/approve?token=$req")"
@@ -119,4 +121,25 @@ after_logout="$(curl --silent --output /dev/null --write-out '%{http_code}' \
   --cacert "$TEMP_DIR/cert.pem" -c "$TEMP_DIR/cookies" -b "$TEMP_DIR/cookies" \
   https://127.0.0.1:18444/localowner/dashboard)"
 test "$after_logout" = 403
+curl --silent --fail --cacert "$TEMP_DIR/cert.pem" --request PUT \
+  --data-urlencode 'app=second-synthetic-client' \
+  https://127.0.0.1:18444/api/token >"$TEMP_DIR/request2.json"
+auth_url2="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["authUrl"])' "$TEMP_DIR/request2.json")"
+unauth_approval="$(curl --silent --output /dev/null --write-out '%{http_code}' \
+  --cacert "$TEMP_DIR/cert.pem" -c "$TEMP_DIR/cookies" -b "$TEMP_DIR/cookies" "$auth_url2")"
+test "$unauth_approval" = 303
+curl --silent --fail --cacert "$TEMP_DIR/cert.pem" \
+  -c "$TEMP_DIR/cookies" -b "$TEMP_DIR/cookies" \
+  https://127.0.0.1:18444/localowner/login >"$TEMP_DIR/login2.html"
+csrf2="$(sed -n 's/.*name="csrf" value="\([^"]*\)".*/\1/p' "$TEMP_DIR/login2.html")"
+test -n "$csrf2"
+login_redirect="$(curl --silent --output /dev/null --write-out '%{http_code}' \
+  --cacert "$TEMP_DIR/cert.pem" -c "$TEMP_DIR/cookies" -b "$TEMP_DIR/cookies" \
+  --data-urlencode "csrf=$csrf2" --data-urlencode "password=synthetic-password-1234" \
+  https://127.0.0.1:18444/localowner/login)"
+test "$login_redirect" = 303
+curl --silent --fail --cacert "$TEMP_DIR/cert.pem" \
+  -c "$TEMP_DIR/cookies" -b "$TEMP_DIR/cookies" \
+  "$auth_url2" >"$TEMP_DIR/approval2.html"
+grep -q 'Approve API token' "$TEMP_DIR/approval2.html"
 echo "local provider HTTPS, owner login, token approval, stock JWT/API: PASS"

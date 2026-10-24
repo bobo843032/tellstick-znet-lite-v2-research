@@ -17,6 +17,7 @@ from api import ApiManager
 from telldus import DeviceApiManager
 from localowner import LocalOwnerAuth
 from tellduslive.web import WebRequestHandler as LiveProvider
+from web.base.Server import WebResponseRedirect
 
 api_module = sys.modules[ApiManager.__module__]
 owner_module = sys.modules[LocalOwnerAuth.__module__]
@@ -153,6 +154,30 @@ class Integration(unittest.TestCase):
         newer = json.loads(response.data)['token']
         self.assertNotEqual(newer,'')
         self.assertEqual(self.api.handleRequest('api','system/info',{},FakeRequest('GET',headers={'Authorization':'Bearer bad'})).statusCode,401)
+    def test_stock_token_link_opens_local_approval_after_login(self):
+        response = self.api.handleRequest('api','token',{},FakeRequest('PUT', {'app':'synthetic-client'}))
+        data = json.loads(response.data)
+        req = data['token']
+        self.assertEqual(data['authUrl'], 'https://isolated.test/localowner/approve?token='+req)
+        self.assertFalse(self.api.tokens[req]['authorized'])
+        owner_module.cherrypy.request.path_info = '/localowner/approve'
+        redirect = self.owner.handleRequest('localowner','approve',{'token':req},
+                                            FakeRequest('GET',session=self.session))
+        self.assertIsInstance(redirect, WebResponseRedirect)
+        self.assertEqual(redirect.url, 'login')
+        self.owner.handleRequest('localowner','login',{},FakeRequest('GET',session=self.session))
+        csrf = self.session['localowner_login_csrf']
+        redirect = self.owner.handleRequest('localowner','login',{},
+            FakeRequest('POST',{'csrf':csrf,'password':'synthetic-password'},self.session))
+        self.assertIsInstance(redirect, WebResponseRedirect)
+        self.assertEqual(redirect.url, 'approve?token='+req)
+        self.assertFalse(self.api.tokens[req]['authorized'])
+        self.approve(req)
+        self.assertTrue(self.api.tokens[req]['authorized'])
+        self.assertTrue(self.token(req))
+        owner_module.cherrypy.request.scheme = 'http'
+        response = self.api.handleRequest('api','token',{},FakeRequest('PUT', {'app':'synthetic-client'}))
+        self.assertIn('/api/authorize?token=', json.loads(response.data)['authUrl'])
     def test_original_device_and_sensor_list_routes(self):
         req=self.pending()
         self.login()
