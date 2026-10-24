@@ -1,0 +1,19 @@
+# Authentication and the local-owner prototype
+
+The stock firmware has a local JWT-protected HTTP API, but approval of a new token is coupled to Telldus Live OpenID. `api.ApiManager` accepts a local token request and later issues or renews JWTs; `web.base.Server` protects the approval page with a web session. In the examined image, the stock `tellduslive.web.WebRequestHandler` is the authentication provider for that session. Its OpenID flow checks the returned email against the device's registered account. This dependency is in token **approval**, not in every API request made with an already valid token. These are STATICALLY VERIFIED code paths, not proof that every device function is cloud-independent in operation.
+
+JWT signatures are made with a device-generated API token key. Device-specific material protects the stored key but is not itself the JWT signing key. This distinction matters for both threat analysis and local integration design. The prototype uses the firmware's existing `ApiManager` token object, JWT signing, validation, and renewal; it does not disclose or replace the signing key.
+
+## Public Telldus login and TLS observations
+
+The original web startup uses HTTP and does not configure a Secure session cookie. Its OpenID discovery starts at an HTTP URL, while the browser carries redirects and the local callback. Those are separate connections and possible failure points. During the 2026-10-24 offline investigation, public HTTP and HTTPS OpenID discovery responded. The actual firmware MIPS Python 2.7/Requests/OpenSSL stack completed a certificate-verified HTTPS GET to the public discovery endpoint. Therefore an obsolete TLS stack is **not established** as the cause of intermittent owner login. A full account login, callback, cookie exchange, and clock-dependent OpenID verification were not tested.
+
+## Prototype boundary
+
+The independently written [`LocalOwnerAuth`](../prototype/localowner/LocalOwnerAuth.py) implements the stock `IWebRequestAuthenticationHandler` and `IWebRequestHandler` interfaces in Python 2.7. It accepts no default password. An owner verifier is salted PBKDF2-HMAC-SHA256, stored in an owner-only file. Login is rate-limited; successful login rotates the CherryPy session; local sessions expire after 30 minutes. Login, approval, and logout forms use session-bound CSRF tokens. The local provider refuses to authorize the stock approval POST using only a local session.
+
+The proposed [`LocalHttpsServer`](../prototype/localowner/LocalHttpsServer.py) reuses the firmware's CherryPy router and API plugins while requiring a certificate and private key. The test server listened only on loopback and rejected plaintext HTTP on its TLS port. A browser must still trust a certificate valid for the gateway address in a future installation. Merely switching the listener to HTTPS would not make the product safe if another HTTP route remained reachable.
+
+In the prototype flow, the local owner approves an existing pending token request. The original `ApiManager` then issues the JWT and handles renewal. EXECUTED IN EMULATION: the original Python 2.7 runtime, CherryPy 3.7, and API/JWT modules completed this sequence over loopback HTTPS with synthetic credentials and devices. The original Telldus Live provider remained importable. See [testing](testing.md) for exact coverage.
+
+This remains an **offline prototype**. Stock token requests still return an approval URL leading to the original OpenID page, so a generic API client does not automatically reach local approval. The stock approval page also has its own CSRF behavior, beyond the new provider's protection. Session-cookie behavior on physical hardware, certificate provisioning, and the absence of an alternate HTTP path need verification before deployment. No installation or owner login on a real gateway has been performed.
