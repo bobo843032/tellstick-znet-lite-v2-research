@@ -5,7 +5,7 @@ Independent research into the hardware and stock firmware of the TellStick ZNet 
 ## What is established
 
 - The examined unit has an AR933x/MIPS host running OpenWrt with a SquashFS root and writable overlay. UART, bootloader access, and the integrated Wi-Fi interface were verified on physical hardware in the earlier research. See [hardware](docs/hardware.md), [firmware](docs/firmware.md), and [Wi-Fi](docs/undocumented-wifi.md).
-- Stock firmware 1.3.2 contains local discovery, an event/control interface, and a CherryPy HTTP API. The HTTP API has device and sensor routes and uses signed tokens. The exact roles and verification limits are in [local interfaces](docs/interfaces.md).
+- Stock firmware 1.3.2 contains local discovery, an RF433 event/control interface, and a CherryPy HTTP API. UDP 42314 has one replaceable event listener and no handler-level authentication or command acknowledgement; UDP 30303 exposes sensitive discovery information. The HTTP API has device and sensor routes and uses signed tokens. See [local interfaces](docs/interfaces.md) and the [42314 analysis](docs/udp-42314.md).
 - Approval of a new API token in stock firmware depends on a Telldus Live OpenID login. Existing token validation and several device routes run locally in firmware code. That distinction matters: a local API is not, by itself, a cloud-free onboarding path. See [authentication](docs/authentication.md).
 - An independently written Python 2.7 plugin can use the firmware's existing API and JWT machinery. Its login, token approval, and selected API routes were exercised under MIPS user-mode emulation with synthetic settings and mocked devices. See [prototype](prototype/README.md) and [test record](docs/testing.md).
 - Stock Z-Wave components include local controller and command paths, but full local administration and radio behavior remain unverified. RF433 has a separate local command path. See [RF433](docs/rf433.md), [Z-Wave local paths](docs/zwave-local.md), and [no-cloud status](docs/no-cloud.md).
@@ -31,7 +31,7 @@ The prototype retains the stock token format and API dispatcher. It adds an owne
 ## Read next
 
 - [Hardware and UART](docs/hardware.md) · [bootloader](docs/uart-and-uboot.md) · [firmware](docs/firmware.md) · [updates and recovery](docs/update-and-recovery.md)
-- [Local interfaces and API](docs/interfaces.md) · [authentication and TLS](docs/authentication.md)
+- [Local interfaces and API](docs/interfaces.md) · [UDP 42314](docs/udp-42314.md) · [authentication and TLS](docs/authentication.md)
 - [RF433](docs/rf433.md) · [Z-Wave hardware](docs/zwave.md) · [Z-Wave local paths](docs/zwave-local.md)
 - [No-cloud design and remaining work](docs/no-cloud.md) · [offline tests](docs/testing.md) · [hardware readiness](docs/hardware-readiness.md)
 - [References and attribution](docs/references.md) · [security policy](SECURITY.md)

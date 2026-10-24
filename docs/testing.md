@@ -1,6 +1,6 @@
 # Offline test record
 
-All results below were recorded on 2026-10-24 against the official TellStick ZNet Lite V2 1.3.2 image. The published prototype and tests were rerun after removal of machine-specific paths and variable names. These are not a claim that CI reproduces the results from a fresh clone. The vendor image, extracted root filesystem, and MIPS emulator are **not distributed** here. No physical gateway was contacted during these tests.
+The results below were recorded on 2026-10-24 and 2026-10-25 against the official TellStick ZNet Lite V2 1.3.2 image. The published prototype and tests were rerun after removal of machine-specific paths and variable names. These are not a claim that CI reproduces the results from a fresh clone. The vendor image, extracted root filesystem, and MIPS emulator are **not distributed** here. No physical gateway was contacted during these tests.
 
 | Test | Code exercised | Recorded result | Limit |
 | --- | --- | --- | --- |
@@ -14,6 +14,8 @@ All results below were recorded on 2026-10-24 against the official TellStick ZNe
 | Local UI | JavaScript syntax check and authenticated serving over loopback HTTPS | PASS | No visual mobile-browser test |
 | Stock `system/info` authorization | [`test_original_system_info_http.py`](../tests/test_original_system_info_http.py), original CherryPy/API modules over loopback HTTP | 6/6 PASS: missing, empty, wrong-format, invalid, expired, valid JWT | Valid case uses synthetic board values; no physical gateway |
 | Vendor upgrade verifier | [`test_stock_upgrade_verification.py`](../tests/test_stock_upgrade_verification.py), original `tellstick-upgrade.py:verifyFile` | 4/4 PASS: size, SHA-1, GPG rejection, and simulated GPG success | GPG subprocess is mocked; no vendor signature or flash tested |
+| UDP 42314 original-module parser/listener | [`test_udp42314_original_offline.py`](../tests/test_udp42314_original_offline.py) | 7/7 PASS: parser, malformed input, listener replacement, unknown/incomplete messages, event forwarding, Z-Wave version notice | Fake sockets; no serial/radio hardware |
+| UDP 42314 private queue and loopback checks | Original `CommandHandler`, `Protocol`, `RF433Msg`, `Adapter.queue`, and `SocketServer.UDPServer` | 9/9 PASS, including a real encoder to mock queue and server continuation after a malformed datagram | Test harness retained privately to avoid publishing an operational radio-command example; loopback only |
 
 In the integration test, owner login, rate limiting, CSRF rejection, session timeout/logout, valid and invalid JWTs, expired tokens, renewal, and the stock system/device/sensor routes were exercised. The additional test checked the HTTPS approval URL, login return path, and unchanged stock response on HTTP. The provider kept the original Telldus Live class importable. The end-to-end probe exercised the approval URL and unauthenticated browser return path with short-lived synthetic credentials and a temporary certificate, then stopped its server and deleted test files.
 
@@ -41,6 +43,9 @@ export QEMU_MIPS=/path/to/qemu-mips
   -E PYTHONHOME="$FIRMWARE_ROOTFS/usr" \
   -E FIRMWARE_ROOTFS="$FIRMWARE_ROOTFS" \
   "$FIRMWARE_ROOTFS/usr/bin/python2.7" tests/test_stock_upgrade_verification.py
+"$QEMU_MIPS" -L "$FIRMWARE_ROOTFS" \
+  -E PYTHONHOME="$FIRMWARE_ROOTFS/usr" \
+  "$FIRMWARE_ROOTFS/usr/bin/python2.7" tests/test_udp42314_original_offline.py
 sh tests/run_tls_probe.sh
 sh tests/run_local_https_probe.sh
 LOCALOWNER_LOCAL_ONLY=1 sh tests/run_local_https_probe.sh
