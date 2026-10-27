@@ -10,7 +10,7 @@ The firmware includes a U-Boot bootloader, Linux kernel, compressed root filesys
 
 This document covers the firmware environment observed on a TellStick ZNet Lite V2 running stock firmware version 1.3.2.
 
-The earlier investigation used serial console access, Linux shell inspection, captured boot messages, and filesystem examination. A complete private flash backup was reported at the time, but its present file and checksum have not been located in the current research storage.
+The earlier investigation used serial console access, Linux shell inspection, captured boot messages, and filesystem examination. A complete 16 MiB private flash backup was subsequently located outside this repository and compared with selected official 1.3.2 firmware regions. Restoration from that backup has not been tested.
 
 The objective is to document the firmware architecture, identify its major components, and distinguish confirmed behavior from areas requiring further analysis.
 
@@ -464,9 +464,7 @@ Their output may nevertheless contain identifying information and should be revi
 
 ## Firmware Backup and Evidence Handling
 
-A complete flash backup was reported during the earlier research. Its current file location, checksum, and restore readiness have not been verified in this phase.
-
-The reported full-flash capture would include the original firmware and hardware-specific flash contents; the actual image has not been re-examined.
+A complete 16 MiB flash backup was located in private local storage after the earlier research. Its MTD slices were matched to the full image, and the official 1.3.2 SquashFS payload matched the corresponding backup payload byte for byte. This validates the examined artifact, not a restore procedure or the gateway's current flash contents. Hardware-specific data remain private.
 
 ### Memory Constraints
 
@@ -510,7 +508,7 @@ Selected technical observations, sanitized logs and independently authored docum
 | Integrated Wi-Fi | Functional | Tested |
 | Remote-support package | Installed | Confirmed |
 | Embedded SSH private key | Identified | Confirmed |
-| Full flash backup | Historically reported; current artifact not located in reviewed storage | Requires verification before any write |
+| Full flash backup | Private 16 MiB artifact located; selected MTD/firmware regions compared bytewise | Artifact RUNTIME VERIFIED as an older physical dump; restore NOT YET VERIFIED |
 | Complete firmware upgrade trust model | Not fully established | Further research |
 | Reproducible firmware build | Not established | Further research |
 | All hardware revisions | Not tested | Unknown |
