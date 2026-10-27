@@ -1,6 +1,6 @@
 # TellStick ZNet Lite V2 research
 
-Independent research into the hardware and stock firmware of the TellStick ZNet Lite V2, with a focus on local operation when Telldus Live is unavailable. The examined firmware is version 1.3.2. This repository contains original documentation, an experimental local-authentication plugin, and offline tests.
+Independent research into the hardware and stock firmware of the TellStick ZNet Lite V2, with a focus on local operation when Telldus Live is unavailable. The examined firmware is version 1.3.2. This repository contains original documentation, an experimental local-authentication plugin, offline tests, and sanitized results from targeted tests on an owned gateway. The one-shot MQTT test plugin and private test artifacts are not distributed here.
 
 ## What is established
 
@@ -8,11 +8,12 @@ Independent research into the hardware and stock firmware of the TellStick ZNet 
 - Stock firmware 1.3.2 contains local discovery, an RF433 event/control interface, and a CherryPy HTTP API. UDP 42314 has one replaceable event listener and no handler-level authentication or command acknowledgement; UDP 30303 exposes sensitive discovery information. The HTTP API has device and sensor routes and uses signed tokens. See [local interfaces](docs/interfaces.md) and the [42314 analysis](docs/udp-42314.md).
 - Approval of a new API token in stock firmware depends on a Telldus Live OpenID login. Existing token validation and several device routes run locally in firmware code. That distinction matters: a local API is not, by itself, a cloud-free onboarding path. See [authentication](docs/authentication.md).
 - An independently written Python 2.7 plugin can use the firmware's existing API and JWT machinery. Its login, token approval, and selected API routes were exercised under MIPS user-mode emulation with synthetic settings and mocked devices. See [prototype](prototype/README.md) and [test record](docs/testing.md).
+- A separate signed Python 2.7 MQTT test plugin loaded from `telldus.startup` during normal daemon starts and published a message to a local broker. The installed loader also accepted a manifest-only plugin with `packages: []`. See the [physical verification matrix](HARDWARE_VERIFICATION.md) and [security review](SECURITY_STATIC_REVIEW.md) for exact evidence limits.
 - Stock Z-Wave components include local controller and command paths, but full local administration and radio behavior remain unverified. RF433 has a separate local command path. See [RF433](docs/rf433.md), [Z-Wave local paths](docs/zwave-local.md), and [no-cloud status](docs/no-cloud.md).
 
 ## Validation
 
-Hardware inspection, UART, and Wi-Fi were verified on the examined unit. The firmware API/JWT and local-owner flows passed 9/9 tests under MIPS emulation with synthetic settings and devices, including the original eight tests and a new token-approval compatibility test. Z-Wave command paths passed 2/2 tests with mocked hardware. CherryPy TLS and the loopback HTTPS flow also passed. RF433 and Z-Wave radio delivery and installation of the local-owner prototype have not been physically tested. See [offline tests](docs/testing.md) for methods and limits.
+Hardware inspection, UART, and Wi-Fi were verified on the examined unit. Later targeted tests verified discovery, UDP registration, the stock HTTP anonymous boundary, and permanent startup of a signed MQTT test plugin. A subscriber received the controlled-import publication; later normal daemon starts logged successful publish calls without separate subscriber receipts. A temporary observer received a **simulated** `sensorValueUpdated` callback in the production daemon. No natural sensor callback arrived during a five-minute observation window, and the physical sensor was unavailable. RF433/Z-Wave radio delivery and the local-owner prototype remain unverified on the gateway. Earlier API/JWT and local-owner tests passed under MIPS emulation with synthetic data; Z-Wave command tests used mocked hardware. See the [test record](docs/testing.md) and [physical verification matrix](HARDWARE_VERIFICATION.md).
 
 ## Local architecture
 
@@ -34,6 +35,7 @@ The prototype retains the stock token format and API dispatcher. It adds an owne
 - [Local interfaces and API](docs/interfaces.md) · [UDP 42314](docs/udp-42314.md) · [authentication and TLS](docs/authentication.md)
 - [RF433](docs/rf433.md) · [Z-Wave hardware](docs/zwave.md) · [Z-Wave local paths](docs/zwave-local.md)
 - [No-cloud design and remaining work](docs/no-cloud.md) · [offline tests](docs/testing.md) · [hardware readiness](docs/hardware-readiness.md)
+- [Physical verification matrix](HARDWARE_VERIFICATION.md) · [security review](SECURITY_STATIC_REVIEW.md)
 - [References and attribution](docs/references.md) · [security policy](SECURITY.md)
 
 The [prototype README](prototype/README.md) describes the original code. The [test instructions](docs/testing.md) explain the separately obtained firmware required to reproduce the offline results.

@@ -1,16 +1,18 @@
 # Local interfaces in firmware 1.3.2
 
-The stock application starts a CherryPy web server alongside two UDP services. The descriptions below come from the official 1.3.2 firmware image, rather than network tests against a gateway. See [firmware](firmware.md) for the platform and startup context and [RF433](rf433.md) for the radio controller.
+The stock application starts a CherryPy web server alongside two UDP services. The firmware descriptions have since been checked with targeted requests to an owned 1.3.2 gateway. See [firmware](firmware.md) for the platform and startup context and [RF433](rf433.md) for the radio controller.
 
 | Interface | Role | Evidence | Operational status |
 | --- | --- | --- | --- |
-| UDP 30303 | Discovery response | `productiontest.Server.AutoDiscoveryHandler` and application startup registration | STATICALLY VERIFIED; reachability NOT YET VERIFIED |
-| UDP 42314 | RF433 event listener and command path | `productiontest.Server.CommandHandler`, `tellduslive.base.LiveMessage`, `rf433.Adapter` | STATICALLY VERIFIED; radio behavior NOT YET VERIFIED |
-| Local HTTP | Web UI and token-protected API | `web.base.Server`, `api.ApiManager`, `telldus.DeviceApiManager`, `lua.Lua` | EXECUTED IN EMULATION with synthetic devices |
+| UDP 30303 | Discovery response | `productiontest.Server.AutoDiscoveryHandler`; targeted physical response | RUNTIME VERIFIED for discovery response; broader exposure not assessed |
+| UDP 42314 | RF433 event listener and command path | `productiontest.Server.CommandHandler`; listener and registration response on physical gateway | RUNTIME VERIFIED for listener, registration and Z-Wave version notice; RF transmission and event delivery NOT YET VERIFIED |
+| Local HTTP | Web UI and token-protected API | `web.base.Server`, `api.ApiManager`, `telldus.DeviceApiManager`, `lua.Lua`; targeted physical HTTP requests | RUNTIME VERIFIED for CherryPy/3.7.0, login redirects and anonymous API rejection; authenticated operations remain untested |
+| RF433 sensor callback | `Device.setSensorValues` → `DeviceManager.sensorValueUpdated` | A temporary observer received a deliberately simulated event in the production daemon; a saved Fineoffset sensor entry produced no new value during observation. | Synthetic callback RUNTIME VERIFIED; natural sensor delivery NOT YET VERIFIED |
+| Z-Wave node callbacks | `zwave.telldus.TelldusZWave` and `IZWObserver` | Controller serial interface and UDP version notice were observed; no node transition was tested. | Host/controller presence RUNTIME VERIFIED; node callbacks STATIC CODE VERIFIED and physically NOT YET VERIFIED |
 
 The discovery response includes device-specific sensitive material. We do not publish its extraction procedure, value, or a probe client. Firmware firewall rules appear to allow both UDP services on the Ethernet-facing OpenWrt zone; that is a configuration finding, **not** evidence of internet reachability. Check actual exposure before using a gateway on an untrusted network.
 
-The other UDP service uses Telldus LiveMessage framing. It keeps one event-listener address in process memory; a later registration replaces the earlier listener. Its RF433 command path reaches the adapter queue, but there is no application-level acknowledgement to the UDP client that a transmission succeeded. The firmware handler does not show a separate sender-authentication step. Original modules passed [isolated parser, listener, and mock-queue tests](udp-42314.md); no datagram was sent to a physical gateway. Packet construction and radio-command recipes are omitted here. A single-listener design also matters when combining independent local integrations.
+The other UDP service uses Telldus LiveMessage framing. It keeps one event-listener address in process memory; a later registration replaces the earlier listener. Its RF433 command path reaches the adapter queue, but there is no application-level acknowledgement to the UDP client that a transmission succeeded. The firmware handler does not show a separate sender-authentication step. Original modules passed [isolated parser, listener, and mock-queue tests](udp-42314.md). A targeted physical registration received a Z-Wave version notice; no RF command or event was verified on the gateway. Packet construction and radio-command recipes are omitted here. A single-listener design also matters when combining independent local integrations.
 
 ## Token-protected HTTP API
 
@@ -26,4 +28,4 @@ These are application handlers, not 18 separately verified hardware capabilities
 
 `zwave.telldus.TelldusZWave` initializes a local controller and attaches nodes to the device manager. Generic device operations can reach Z-Wave node command code. Controller administration, including inclusion and exclusion, has internal methods and Telldus Live handlers, but is not exposed through the 18 examined local HTTP calls. The [Z-Wave hardware research](zwave.md) and [local code-path matrix](zwave-local.md) provide the evidence boundary; [no-cloud status](no-cloud.md) separates mocked command-queue tests from physical operation.
 
-**Evidence key:** STATICALLY VERIFIED means present in examined firmware code; EXECUTED IN EMULATION means original firmware modules ran under MIPS user-mode emulation; TESTED WITH MOCKED HARDWARE means radio or device-facing dependencies were substituted; VERIFIED ON PHYSICAL HARDWARE applies only where an existing document explicitly records such a test; NOT YET VERIFIED means no corresponding test was performed.
+**Evidence key:** STATIC CODE VERIFIED means present in examined firmware code; VERIFIED IN EMULATION ONLY means original firmware modules ran with emulated or mocked dependencies; RUNTIME VERIFIED means observed on the owned physical gateway (with synthetic events identified explicitly); NOT YET VERIFIED means the required physical behavior has not been observed; HYPOTHESIS means a proposed behavior still needs a discriminating test.

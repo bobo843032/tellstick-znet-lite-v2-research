@@ -1,4 +1,14 @@
-# Offline test record
+# Test record
+
+## Physical follow-up on firmware 1.3.2
+
+Targeted tests on an owned gateway subsequently verified the stock UDP discovery response, UDP 42314 registration/version response, CherryPy HTTP service and anonymous API rejection. A separately built Python 2.7 MQTT plugin was accepted through the installed plugin loader with a detached egg signature and ran its `telldus.startup` entry point on normal daemon starts. A subscriber received the controlled-import test message from the broker; later daemon starts logged successful publish calls without an independent subscriber receipt for each restart. The working plugin remains installed. These results do not verify RF/Z-Wave delivery or the local-owner prototype.
+
+The installed loader also accepted an empty `packages` list and reported success without package signature checks. A controlled plugin-name probe confirmed that the manifest name can move the installation path outside the intended plugin directory and that replacing an existing target removes its contents. Only a uniquely named, test-owned directory was affected and then removed. The manifest is parsed before package verification. These are **RUNTIME VERIFIED** findings about the local loader; authenticated web upload and access control are separate and have not been tested end to end. The plugin keyring backup file is GPG's previous public keyring, not an additional active trust store. No keys, credentials, device identifiers or executable probe payloads are distributed here.
+
+The firmware's device/sensor and RF433 signal hooks are **STATIC CODE VERIFIED**. A temporary sensor-only observer loaded in the normal daemon. It received no natural callback during more than five minutes of observation; the saved configuration had a sensor entry but no new values, and the physical sensor was unavailable. A separate, clearly marked one-shot trigger then called the original `DeviceManager.sensorValueUpdated` method with synthetic arguments in the production daemon. The observer received that queued callback: synthetic daemon dispatch is **RUNTIME VERIFIED**, while natural sensor delivery and sensor-to-MQTT delivery are **NOT YET VERIFIED**. Both temporary plugins were removed; the MQTT test plugin was left unchanged. See the [verification matrix](../HARDWARE_VERIFICATION.md) for the exact boundary.
+
+## Earlier offline tests
 
 The results below were recorded on 2026-10-24 and 2026-10-25 against the official TellStick ZNet Lite V2 1.3.2 image. The published prototype and tests were rerun after removal of machine-specific paths and variable names. These are not a claim that CI reproduces the results from a fresh clone. The vendor image, extracted root filesystem, and MIPS emulator are **not distributed** here. No physical gateway was contacted during these tests.
 
