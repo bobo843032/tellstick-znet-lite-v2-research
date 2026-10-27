@@ -509,7 +509,7 @@ Before modifying firmware, relevant considerations include:
 - Maintaining reliable serial access
 - Avoiding interruption during flash operations
 
-A 16 MiB full-flash backup was later located in the owner's private local storage. Its MTD slices and the official 1.3.2 image were compared bytewise for selected regions, including an exact SquashFS payload match. No restore has been attempted; the backup alone is not a tested recovery route. Its device-specific contents and private location are not distributed here.
+A 16 MiB full-flash backup was later located in private local storage. Its MTD slices and the official 1.3.2 image were compared bytewise for selected regions, including an exact SquashFS payload match. No restore has been attempted; the backup alone is not a tested recovery route. Its device-specific contents and private location are not distributed here.
 
 No device-specific firmware image or calibration data is distributed in this repository.
 
